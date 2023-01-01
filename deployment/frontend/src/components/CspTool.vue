@@ -78,6 +78,7 @@
                     <td class="px-1">数量</td>
                     <!-- <td>Label</td> -->
                     <!-- <td>Color</td> -->
+                    <td class="px-1">重量（吨）</td>
                     <td
                       v-if="mode === '1d' && mode_data.result"
                       class="px-3"
@@ -109,7 +110,14 @@
                         v-model="child.quantity"
                       />
                     </td>
-
+                    <td>
+                      <input
+                        disabled="true"
+                        class="px-1"
+                        type="text"
+                        v-model="child.weight"
+                      />
+                    </td>
                     <td
                       v-if="mode === '1d' && mode_data.result"
                       class="px-1"
@@ -155,15 +163,44 @@
                 <thead>
                   <tr class="border">
                     <td class="px-1">#</td>
-                    <td class="px-1">边角（mm）</td>
+                    <td class="px-1">总重量（吨）</td>
                     <td class="px-2">
                       <input
                         class="px-2"
                         type="text"
-                        v-model="this.side"
+                        v-model="this.all_weight"
+                        v-bind:on-focusout="getSideWeight()"
                       />
                     </td>
-                    <td class="px-1 border-0"></td>
+                    <td class="px-1 border-0">
+                    
+                    </td>
+                  </tr>
+                </thead>
+                <thead>
+                  <tr class="border">
+                    <td class="px-1">#</td>
+                    <td class="px-1">边丝（mm）</td>
+                    <td class="px-2">
+                      <input
+                        class="px-1"
+                        type="text"
+                        style="width:30%"
+                        v-model="this.side"
+                        v-bind:on-focusout="getSideWeight()"
+                      />
+                      边丝重量
+                     <input
+                        disabled="true"
+                        class="px-1"
+                        type="text"
+                        style="width:30%"
+                        v-model="this.side_worst"
+                      />（吨）
+                    </td>
+                    <td class="px-1 border-0">
+
+                    </td>
                   </tr>
                 </thead>
                 <thead>
@@ -188,7 +225,7 @@
                       {{ index + 1 }}
                     </td>
                     <td>
-                      <input class="px-1" type="text" v-model="parent.width" />
+                      <input class="px-1" type="text" v-model="parent.width" v-bind:on-focusout="getSideWeight()" />
                     </td>
 
                     <td v-if="mode === '2d'">
@@ -335,7 +372,7 @@
                     <tr class="border">
                       <td class="px-1">卷</td>
                       <td class="px-1">使用率</td>
-                      <!-- <td class="px-1">Unused Width</td> -->
+                      <td class="px-1">边丝/重量</td>
                       <td class="px-1">切割的明细</td>
                     </tr>
                   </thead>
@@ -352,12 +389,9 @@
                       <td class="px-1">
                         {{ getPercentageUtilization(bigRoll[0]) }} %
                       </td>
-
-                      <!-- 										<td class="px-1">
-                                            {{ bigRoll[0] }}
-                                        </td>
-
- -->
+                      <td class="px-1">
+                        {{ getRound(bigRoll[0])}}/{{ getWorstWeight(getRound(bigRoll[0]),mode_data.result.solutions.length) }}
+                      </td>
                       <td class="px-1">
                         <!-- join without space, so paste in excel would not change it to date -->
                         {{ bigRoll[1].join(",") }}
@@ -437,12 +471,14 @@ export default {
       cutStyle: "exactCuts",
 
       side:3,
+      side_worst:0.0,
+      all_weight:0.0,
       // remembers the state of Cut button
       cutButtonDisabled: false,
 
       mode1d: {
         childs: [
-          { width: "", quantity: "" }, // 1d mode doesn't have height
+          { width: "", quantity: "" ,weight: 0.0 }, // 1d mode doesn't have height
         ],
         parents: [{ width: "", quantity: "先不需要输入" }],
         childErrors: null,
@@ -1380,6 +1416,18 @@ export default {
       this.clearTheDrawing();
     },
 
+    getSideWeight: function () {
+      let parent_width =  this.mode_data.parents[0].width;
+      let side = this.side;
+      if (parent_width > 0 && side > 0) {
+        let percentage = (this.side / (parent_width) ) * this.all_weight; 
+        percentage *= 1000; // preserve 2 digits after decimal
+        percentage = Math.round(percentage); // remove the decimal part
+        percentage /= 1000; // back to original percentage
+        this.side_worst = percentage; 
+      }
+    },
+
     /**
             Removes the row at the index specified. if it's only row, add an empty row after removing
         */
@@ -1451,6 +1499,34 @@ export default {
 
       this.clearChildData(false); // it will also clear the drawing
       this.clearParentData(false);
+    },
+
+    getRound: function (unusedWidth) {
+      let worstWidth = unusedWidth * 100; // preserve 2 digits after decimal
+      worstWidth = Math.round(worstWidth); // remove the decimal part
+      worstWidth /= 100; // back to original percentage
+      return worstWidth;
+    },
+
+    getWorstWeight: function (worstWidth, num ){
+      let parent_width =  this.mode_data.parents[0].width;
+      // 计算宽度的重量
+      if (parent_width > 0 ) {
+        for (let i = 0; i < this.mode_data.childs.length; i++) {
+          const child = this.mode_data.childs[i];
+          let percentage = ((child.width * child.quantity) / (parent_width * num) ) * this.all_weight; 
+          percentage *= 1000; // preserve 2 digits after decimal
+          percentage = Math.round(percentage); // remove the decimal part
+          percentage /= 1000; // back to original percentage
+          child.weight = percentage;
+        }
+      }
+      let percentage = (worstWidth / (parent_width * num) ) * this.all_weight; 
+      percentage *= 1000; // preserve 2 digits after decimal
+      percentage = Math.round(percentage); // remove the decimal part
+      percentage /= 1000; // back to original percentage
+
+      return percentage; 
     },
 
     getPercentageUtilization: function (unusedWidth) {
