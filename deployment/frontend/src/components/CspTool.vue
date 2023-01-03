@@ -203,18 +203,6 @@
                     </td>
                   </tr>
                 </thead>
-                <thead>
-                  <tr class="border">
-                    <td class="px-1">#</td>
-                    <td class="px-1">宽高（mm）</td>
-
-                    <td v-if="mode === '2d'" class="px-1">高（mm）</td>
-
-                    <td class="px-1">数量</td>
-
-                    <td class="px-1 border-0"></td>
-                  </tr>
-                </thead>
                 <tbody>
                   <tr
                     class="border"
@@ -222,17 +210,13 @@
                     v-bind:key="index"
                   >
                     <td class="px-1 text-secondary">
-                      {{ index + 1 }}
+                      #
                     </td>
                     <td>
-                      <input class="px-1" type="text" v-model="parent.width" v-bind:on-focusout="getSideWeight()" />
+                      宽高（mm）
                     </td>
-
                     <td v-if="mode === '2d'">
                       <input class="px-1" type="text" v-model="parent.height" />
-                    </td>
-
-                    <td>
                       <input
                         disabled="true"
                         class="px-1"
@@ -241,8 +225,12 @@
                       />
                     </td>
 
+                    <td>
+                      <input class="px-1" type="text" v-model="parent.width" v-bind:on-focusout="getSideWeight()" />
+                    </td>
+
                     <td class="px-1 border-0">
-                      <div
+                      <div style="display: none;"
                         v-on:click="removeRow(index, true)"
                         class="btn btn-outline-danger btn-sm m-0 py-0 px-1"
                       >
