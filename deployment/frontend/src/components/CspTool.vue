@@ -76,7 +76,7 @@
                     <td v-if="mode === '2d'" class="px-1">高</td>
 
                     <td class="px-1">数量</td>
-                    <!-- <td>Label</td> -->
+                    <td class="px-1">预定重量（吨）</td>
                     <!-- <td>Color</td> -->
                     <td class="px-1">重量（吨）</td>
                     <td
@@ -102,12 +102,18 @@
                     <td v-if="mode === '2d'">
                       <input class="px-1" type="text" v-model="child.height" />
                     </td>
-
                     <td>
                       <input
                         class="px-1"
                         type="text"
                         v-model="child.quantity"
+                      />
+                    </td>
+                    <td>
+                      <input
+                        class="px-1"
+                        type="text"
+                        v-model="child.sch_quantity"
                       />
                     </td>
                     <td>
@@ -149,6 +155,15 @@
               <div class="row">
                 <div class="col">
                   <button
+                    :disabled="cutButtonDisabled"
+                    class="my-2 btn btn-primary btn-sm"
+                    @click="calSheets()"
+                  >
+                    <b>✓ 计算数量</b>
+                  </button>
+                </div>
+                <div class="col">
+                  <button
                     class="my-1 btn btn-outline-danger btn-sm float-end"
                     v-on:click="clearParentData"
                   >
@@ -160,6 +175,58 @@
               <p class="text-danger mb-1">{{ mode_data.parentErrors }}</p>
 
               <table cellpadding="0" cellspacing="0" class="w-100 border-0">
+                <thead>
+                  <tr class="border">
+                    <td class="px-1">#</td>
+                    <td class="px-1">单卷重量（吨）</td>
+                    <td class="px-2">
+                      <input
+                        class="px-2"
+                        type="text"
+                        v-model="this.single_weight"
+                      />
+                    </td>
+                    <td class="px-1 border-0">
+                    
+                    </td>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    class="border"
+                    v-for="(parent, index) in mode_data.parents"
+                    v-bind:key="index"
+                  >
+                    <td class="px-1 text-secondary">
+                      #
+                    </td>
+                    <td>
+                      卷宽度（mm）
+                    </td>
+                    <td v-if="mode === '2d'">
+                      <input class="px-1" type="text" v-model="parent.height" />
+                      <input
+                        disabled="true"
+                        class="px-1"
+                        type="text"
+                        v-model="parent.quantity"
+                      />
+                    </td>
+
+                    <td>
+                      <input class="px-1" type="text" v-model="parent.width" v-bind:on-focusout="getSideWeight()" />
+                    </td>
+
+                    <td class="px-1 border-0">
+                      <div style="display: none;"
+                        v-on:click="removeRow(index, true)"
+                        class="btn btn-outline-danger btn-sm m-0 py-0 px-1"
+                      >
+                        x
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
                 <thead>
                   <tr class="border">
                     <td class="px-1">#</td>
@@ -203,42 +270,7 @@
                     </td>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr
-                    class="border"
-                    v-for="(parent, index) in mode_data.parents"
-                    v-bind:key="index"
-                  >
-                    <td class="px-1 text-secondary">
-                      #
-                    </td>
-                    <td>
-                      宽高（mm）
-                    </td>
-                    <td v-if="mode === '2d'">
-                      <input class="px-1" type="text" v-model="parent.height" />
-                      <input
-                        disabled="true"
-                        class="px-1"
-                        type="text"
-                        v-model="parent.quantity"
-                      />
-                    </td>
-
-                    <td>
-                      <input class="px-1" type="text" v-model="parent.width" v-bind:on-focusout="getSideWeight()" />
-                    </td>
-
-                    <td class="px-1 border-0">
-                      <div style="display: none;"
-                        v-on:click="removeRow(index, true)"
-                        class="btn btn-outline-danger btn-sm m-0 py-0 px-1"
-                      >
-                        x
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
+                
               </table>
             </div>
           </div>
@@ -466,7 +498,7 @@ export default {
 
       mode1d: {
         childs: [
-          { width: "", quantity: "" ,weight: 0.0 }, // 1d mode doesn't have height
+          { width: "", quantity: "" ,weight: 0.0 ,sch_quantity:0.0}, // 1d mode doesn't have height
         ],
         parents: [{ width: "", quantity: "先不需要输入" }],
         childErrors: null,
@@ -637,7 +669,7 @@ export default {
     },
 
     addRowToChilds: function () {
-      this.mode_data.childs.push(["", "", ""]); // add an empty row
+      this.mode_data.childs.push(["", 0, 0,0]); // add an empty row
     },
 
     addRowToParents: function () {
@@ -646,6 +678,35 @@ export default {
 
     hideResult: function () {
       this.mode_data.result = null;
+    },
+
+    calSheets:function () {
+
+      let parent_width = this.mode_data.parents[0].width;
+      console.log("parent_width:",parent_width);
+      let s_weight = this.single_weight;
+      console.log("s_weight:",s_weight);
+      let all_s_weight  = 0.0;
+
+      this.mode_data.childs.forEach((child) => {
+        console.log("sch_quantity:",child.sch_quantity);
+        all_s_weight += parseFloat(child.sch_quantity);
+      });
+
+      console.log("all_s_weight:",all_s_weight);
+
+      let n = parseInt(all_s_weight / parseFloat(s_weight));
+
+      this.all_weight = parseInt(n * parseFloat(s_weight));
+
+      console.log("all_weight:",this.all_weight );
+      for (let i = 0; i < this.mode_data.childs.length; i++) {
+        const child = this.mode_data.childs[i];
+        console.log("width,parent_width,s_weight",child.width,parent_width,s_weight);
+        let s = (parseFloat(child.width)/ parseFloat(parent_width)) * parseFloat(s_weight);
+        let n =  parseInt(parseFloat(child.sch_quantity)/s);
+        child.quantity = n;
+      }
     },
 
     /**
@@ -675,7 +736,6 @@ export default {
       // TODO send to server
       this.sendReq();
     },
-
     /**
      * Hides the previous error msgs if any,
      * validates childs and parents array
@@ -777,7 +837,7 @@ export default {
     },
 
     sendReq: function () {
-      let url = 'http://127.0.0.1:5000/stocks_1d';
+      let url = 'http://150.158.76.64:5555/stocks_1d';
       // url = this.mode === '1d' ?
       // 		'http://127.0.0.1:5000/stocks_1d'
       // 		: 'http://127.0.0.1:5000/stocks_2d';
