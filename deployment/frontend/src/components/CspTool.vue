@@ -695,7 +695,7 @@ export default {
 
       console.log("all_s_weight:",all_s_weight);
 
-      let n = parseInt(all_s_weight / parseFloat(s_weight));
+      let n = Math.round(all_s_weight / parseFloat(s_weight));
 
       this.all_weight = parseInt(n * parseFloat(s_weight));
 
@@ -704,7 +704,7 @@ export default {
         const child = this.mode_data.childs[i];
         console.log("width,parent_width,s_weight",child.width,parent_width,s_weight);
         let s = (parseFloat(child.width)/ parseFloat(parent_width)) * parseFloat(s_weight);
-        let n =  parseInt(parseFloat(child.sch_quantity)/s);
+        let n =  Math.round(parseFloat(child.sch_quantity)/s);
         child.quantity = n;
       }
     },
